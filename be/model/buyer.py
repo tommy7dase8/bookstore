@@ -108,3 +108,39 @@ class Buyer():
         order.status = 2
         session.commit()
         return 200, "ok"
+    def check_order(self):
+        # 自动取消：检查未付款order是否超出15min
+        order2pay = session.query(Order_to_Pay).all()
+        if order2pay is not []:
+            for i in range(len(order2pay)):
+                paytime = order2pay[i].paytime
+                time_now = datetime.now()
+                old_time = datetime.strptime(str(paytime), "%Y-%m-%d %H:%M:%S.%f")
+                new_time = datetime.strptime(str(time_now), "%Y-%m-%d %H:%M:%S.%f")
+                time_lag = (new_time - old_time).seconds
+
+                if (time_lag > 15 * 60):
+                    order_id = order2pay[i].order_id
+                    user_id = order2pay[i].user_id
+                    store_id = order2pay[i].store_id
+
+                    # 商品退回
+                    store = session.query(Store).filter(Store.store_id == store_id).first()
+                    if store is None:
+                        return error.error_non_exist_store_id(store_id)
+                    order_detail = session.query(Order_detail).filter(Order_detail.order_id == order_id).all()
+                    total_price = 0
+                    for i in range(len(order_detail)):
+                        book_id = order_detail[i].book_id
+                        book = session.query(Store_detail).filter(Store_detail.store_id == store_id,
+                                                                  Store_detail.book_id == book_id).first()
+                        count = order_detail[i].count
+                        price = book.price
+                        total_price += price * count
+                        book.stock_level += count
+
+                    session.add(Order(order_id=order_id, user_id=user_id, store_id=store_id, paytime=paytime, status=4))
+                    session.delete(order2pay[i])
+                    session.commit()
+                    return 200, "ok", "closed"
+        return 200, "ok", None
