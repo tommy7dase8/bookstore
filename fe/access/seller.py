@@ -19,7 +19,6 @@ class Seller:
             "user_id": self.seller_id,
             "store_id": store_id,
         }
-        # print(simplejson.dumps(json))
         url = urljoin(self.url_prefix, "create_store")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
@@ -32,7 +31,6 @@ class Seller:
             "book_info": book_info.__dict__,
             "stock_level": stock_level,
         }
-        # print(simplejson.dumps(json))
         url = urljoin(self.url_prefix, "add_book")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
@@ -47,7 +45,6 @@ class Seller:
             "book_id": book_id,
             "add_stock_level": add_stock_num,
         }
-        # print(simplejson.dumps(json))
         url = urljoin(self.url_prefix, "add_stock_level")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
