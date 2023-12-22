@@ -27,27 +27,19 @@ class Buyer:
         return r.status_code, response_json.get("order_id")
 
     def payment(self, order_id: str):
-        json = {
-            "user_id": self.user_id,
-            "password": self.password,
-            "order_id": order_id,
-        }
+        json = {"user_id": self.user_id, "password": self.password, "order_id": order_id}
         url = urljoin(self.url_prefix, "payment")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
 
     def add_funds(self, add_value: str) -> int:
-        json = {
-            "user_id": self.user_id,
-            "password": self.password,
-            "add_value": add_value,
-        }
+        json = {"user_id": self.user_id, "password": self.password, "add_value": add_value}
         url = urljoin(self.url_prefix, "add_funds")
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
-    
+
     def receive_books(self, buyer_id: str, order_id: str):
         json = {"user_id": buyer_id, "order_id": order_id}
         url = urljoin(self.url_prefix, "receive_books")
@@ -61,7 +53,7 @@ class Buyer:
         headers = {"token": self.token}
         r = requests.post(url, headers=headers, json=json)
         return r.status_code
-    
+
     def search_order(self):
         json = {"user_id": self.user_id, "password": self.password}
         url = urljoin(self.url_prefix, "search_order")

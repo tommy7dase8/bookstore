@@ -16,7 +16,6 @@ def new_order():
         book_id = book.get("id")
         count = book.get("count")
         id_and_count.append((book_id, count))
-
     b = Buyer()
     code, message, order_id = b.new_order(user_id, store_id, id_and_count)
     return jsonify({"message": message, "order_id": order_id}), code
@@ -41,6 +40,7 @@ def add_funds():
     code, message = b.add_funds(user_id, password, add_value)
     return jsonify({"message": message}), code
 
+
 @bp_buyer.route("/receive_books", methods=["POST"])
 def receive_books():
     user_id: str = request.json.get("user_id")
@@ -48,6 +48,7 @@ def receive_books():
     b = Buyer()
     code, message = b.receive_books(user_id, order_id)
     return jsonify({"message": message}), code
+
 
 @bp_buyer.route("/close_order", methods=["POST"])
 def close_order():
@@ -57,6 +58,7 @@ def close_order():
     b = Buyer()
     code, message = b.close_order(user_id, password, order_id)
     return jsonify({"message": message}), code
+
 
 @bp_buyer.route("/search_order", methods=["POST"])
 def search_order():

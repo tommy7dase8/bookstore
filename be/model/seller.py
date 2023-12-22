@@ -3,6 +3,7 @@ from be.db_conn import *
 import json
 from sqlalchemy import and_
 
+
 class Seller():
     def add_book(self, user_id: str, store_id: str, book_id: str, book_json_str: str, stock_level: int):
         book_json = json.loads(book_json_str)

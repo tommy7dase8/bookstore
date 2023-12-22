@@ -6,7 +6,6 @@ from be.db_conn import *
 from be.model import error
 from threading import Timer
 
-
 class Buyer():
     def new_order(self, user_id: str, store_id: str, id_and_count: [(str, int)]) -> (int, str, str):
         order_id = ""
@@ -94,7 +93,7 @@ class Buyer():
         user.balance += add_value
         session.commit()
         return 200, "ok"
-    
+
     def receive_books(self, buyer_id, order_id):
         order = session.query(Order).filter(Order.order_id == order_id).first()
         if order is None:
@@ -145,7 +144,7 @@ class Buyer():
                     session.commit()
                     return 200, "ok", "closed"
         return 200, "ok", None
-    
+
     def close_order(self, user_id: str, password: str, order_id: str) -> (int, str):
         # 手动取消
         order = session.query(Order).filter(Order.order_id == order_id).first()
@@ -210,7 +209,7 @@ class Buyer():
             session.delete(order2pay)
         session.commit()
         return 200, "ok"
-    
+
     def search_order(self, user_id: str, password: str) -> (int, str, list):
         user = session.query(User).filter(User.user_id == user_id).first()
         if user is None:
@@ -276,7 +275,7 @@ class Buyer():
             return 200, "ok", historys
         else:
             return 200, "ok", historys
-        
+
 
 def auto_run():
     t = Timer(1.0, Buyer.check_order())  # 每秒调用1次
