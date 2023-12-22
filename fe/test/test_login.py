@@ -10,7 +10,6 @@ class TestLogin:
     @pytest.fixture(autouse=True)
     def pre_run_initialization(self):
         self.auth = auth.Auth(conf.URL)
-        # register a user
         self.user_id = "test_login_{}".format(time.time())
         self.password = "password_" + self.user_id
         self.terminal = "terminal_" + self.user_id

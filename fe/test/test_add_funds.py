@@ -2,7 +2,6 @@ import pytest
 import uuid
 from fe.access.new_buyer import register_new_buyer
 
-
 class TestAddFunds:
     @pytest.fixture(autouse=True)
     def pre_run_initialization(self):
