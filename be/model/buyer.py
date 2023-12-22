@@ -108,6 +108,7 @@ class Buyer():
         order.status = 2
         session.commit()
         return 200, "ok"
+
     def check_order(self):
         # 自动取消：检查未付款order是否超出15min
         order2pay = session.query(Order_to_Pay).all()
@@ -144,3 +145,140 @@ class Buyer():
                     session.commit()
                     return 200, "ok", "closed"
         return 200, "ok", None
+    
+    def close_order(self, user_id: str, password: str, order_id: str) -> (int, str):
+        # 手动取消
+        order = session.query(Order).filter(Order.order_id == order_id).first()
+        order2pay = session.query(Order_to_Pay).filter(Order_to_Pay.order_id == order_id).first()
+
+        if order is None and order2pay is None:
+            return error.error_invalid_order_id(order_id)
+
+        if (order is not None):
+            # 已付款：加回库存，修改买家卖家状态
+            status = order.status
+            if status == 4:
+                return error.error_order_closed(order_id)
+            elif status == 1 or status == 2:
+                return error.error_order_can_not_be_closed(order_id)
+
+            buyer_id = order.user_id
+            store_id = order.store_id
+            flag = 0
+
+        elif (order2pay is not None):
+            # 未付款：加回库存
+            buyer_id = order2pay.user_id
+            store_id = order2pay.store_id
+            flag = 3
+
+        if buyer_id != user_id:
+            return error.error_authorization_fail()
+
+        buyer = session.query(User).filter(User.user_id == buyer_id).first()
+        if buyer is None:
+            return error.error_non_exist_user_id(buyer_id)
+        if (password != buyer.password):
+            return error.error_authorization_fail()
+
+        store = session.query(Store).filter(Store.store_id == store_id).first()
+        if store is None:
+            return error.error_non_exist_store_id(store_id)
+
+        order_detail = session.query(Order_detail).filter(Order_detail.order_id == order_id).all()
+        total_price = 0
+        for i in range(len(order_detail)):
+            book_id = order_detail[i].book_id
+            book = session.query(Store_detail).filter(Store_detail.store_id == store_id,
+                                                      Store_detail.book_id == book_id).first()
+            count = order_detail[i].count
+            price = book.price
+            total_price += price * count
+            book.stock_level += count  # 取消商品,退回库存
+
+        if (flag == 0):
+            seller_id = store.user_id
+            if not user_id_exist(seller_id):
+                return error.error_non_exist_user_id(seller_id)
+            seller = session.query(User).filter(User.user_id == seller_id).first()
+            seller.balance -= total_price
+            buyer.balance += total_price
+            order.status = 4
+        elif (flag == 3):
+            paytime = order2pay.paytime
+            session.add(Order(order_id=order_id, user_id=buyer_id, store_id=store_id, paytime=paytime, status=4))
+            session.delete(order2pay)
+        session.commit()
+        return 200, "ok"
+    
+    def search_order(self, user_id: str, password: str) -> (int, str, list):
+        user = session.query(User).filter(User.user_id == user_id).first()
+        if user is None:
+            return 401, "authorization fail.", []
+
+        if user.password != password:
+            return 401, "authorization fail.", []
+
+        historys = []
+
+        # 未付款 因为在单独的表里面
+        order2pay = session.query(Order_to_Pay).all()
+        if (order2pay != []):
+            for i in range(len(order2pay)):
+                order_id = order2pay[i].order_id
+                status = "未付款"
+                order_detail = session.query(Order_detail).filter(Order_detail.order_id == order_id).all()
+                details = []
+                total_price = 0
+                for j in range(len(order_detail)):
+                    book = session.query(Store_detail).filter(Store_detail.store_id == order2pay[i].store_id,
+                                                              Store_detail.book_id == order_detail[j].book_id).first()
+                    price = book.price
+                    total_price += price * order_detail[j].count
+                    detail = {"book_id": order_detail[j].book_id, "count": order_detail[j].count, "single_price": price}
+                    details.append(detail)
+                history = {"order_id": order_id, "user_id": order2pay[i].user_id, "store_id": order2pay[i].store_id,
+                           "total_price": total_price, "order_detail": details, "paytime": order2pay[i].paytime,
+                           "status": status}
+                historys.append(history)
+
+        # 其它状态
+        order = session.query(Order).order_by(Order.paytime).all()
+        if (order != []):
+            for i in range(len(order)):
+                order_id = order[i].order_id
+                status = order[i].status
+                if (status == 0):
+                    status = "已付款，待发货"
+                elif (status == 1):
+                    status = "已发货"
+                elif (status == 2):
+                    status = "已收货"
+                elif (status == 4):
+                    status = "交易关闭"
+
+                order_detail = session.query(Order_detail).filter(Order_detail.order_id == order_id).all()
+                details = []
+                total_price = 0
+                for j in range(len(order_detail)):
+                    book = session.query(Store_detail).filter(Store_detail.store_id == order[i].store_id,
+                                                              Store_detail.book_id == order_detail[j].book_id).first()
+                    price = book.price
+                    total_price += price * order_detail[j].count
+                    detail = {"book_id": order_detail[j].book_id, "count": order_detail[j].count, "single_price": price}
+                    details.append(detail)
+                history = {"order_id": order_id, "user_id": order[i].user_id, "store_id": order[i].store_id,
+                           "total_price": total_price, "order_detail": details, "paytime": order[i].paytime,
+                           "status": status}
+                historys.append(history)
+
+        if (len(historys) != 0):
+            return 200, "ok", historys
+        else:
+            return 200, "ok", historys
+        
+
+def auto_run():
+    t = Timer(1.0, Buyer.check_order())  # 每秒调用1次
+    t.start()
+    t.cancel()
