@@ -10,10 +10,10 @@ error_code = {
     518: "invalid order id {}",
     519: "not sufficient funds, order id {}",
     520: "",
-    521: "",
-    522: "",
-    523: "",
-    524: "",
+    521: "order closed, order id {}",
+    522: "book hasn't been sent to costumer, order id {}",
+    523: "book has been received, order id {}",
+    524: "order can not be closed, order id{}, please contact with the seller.",
     525: "",
     526: "",
     527: "",
@@ -54,7 +54,23 @@ def error_invalid_order_id(order_id):
 
 
 def error_not_sufficient_funds(order_id):
-    return 519, error_code[518].format(order_id)
+    return 519, error_code[519].format(order_id)
+
+
+def error_order_closed(order_id):
+    return 521, error_code[521].format(order_id)
+
+
+def error_order_unsent(order_id):
+    return 522, error_code[522].format(order_id)
+
+
+def error_order_received(order_id):
+    return 523, error_code[523].format(order_id)
+
+
+def error_order_can_not_be_closed(order_id):
+    return 524, error_code[524].format(order_id)
 
 
 def error_authorization_fail():
