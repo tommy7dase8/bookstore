@@ -94,3 +94,17 @@ class Buyer():
         user.balance += add_value
         session.commit()
         return 200, "ok"
+    
+    def receive_books(self, buyer_id, order_id):
+        order = session.query(Order).filter(Order.order_id == order_id).first()
+        if order is None:
+            return error.error_invalid_order_id(order_id)
+        if order.status == 0:
+            return error.error_order_unsent(order_id)
+        if order.status == 2:
+            return error.error_order_received(order_id)
+        if order.user_id != buyer_id:
+            return error.error_authorization_fail()
+        order.status = 2
+        session.commit()
+        return 200, "ok"

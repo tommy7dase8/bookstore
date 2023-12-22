@@ -64,3 +64,18 @@ class Seller():
         session.add(store_one)
         session.commit()
         return 200, "ok"
+
+    def send_books(self, seller_id, order_id):
+        order = session.query(Order).filter(Order.order_id == order_id).first()
+        if order is None:
+            return error.error_invalid_order_id(order_id)
+        if order.status != 0:
+            return 521, 'books has been sent to costumer or the order is cancelled'
+        # status == 4
+        store = session.query(Store).filter(Store.store_id == order.store_id).first()
+        # 店铺主是不是seller
+        if seller_id != store.user_id:
+            return error.error_authorization_fail()
+        order.status = 1
+        session.commit()
+        return 200, "ok"
